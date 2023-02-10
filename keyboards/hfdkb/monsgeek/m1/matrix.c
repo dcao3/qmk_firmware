@@ -164,7 +164,7 @@ dprintf("keycode = 0x%X,TG(WIN_B) = 0x%X,TG(MAC_B) = 0x%X\r\n",keycode,TG(WIN_B)
     }
 }
 
-void matrix_scan_kb(void) {
+void housekeeping_task_kb(void) {
     if(Lkey_flag){
         if(scancode == KC_GRV){
             if (timer_elapsed(current_time) >= 3000) {
