@@ -16,7 +16,7 @@ RGB_MATRIX_ENABLE = yes
 RGB_MATRIX_DRIVER = IS31FL3733
 EEPROM_DRIVER = wear_leveling
 WEAR_LEVELING_DRIVER = spi_flash
-#RGB_MATRIX_CUSTOM_USER = yes #Add turnoff LED
+#RGB_MATRIX_CUSTOM_KB = yes #Add turnoff LED
 
 SRC += matrix.c
 
