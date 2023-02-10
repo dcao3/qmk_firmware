@@ -37,7 +37,6 @@
 #define ENCODERS_PAD_B { B13 }
 
 /* encoder resolution */
-#define ENCODER_RESOLUTION 2
 #define TAP_CODE_DELAY 20
 
 
