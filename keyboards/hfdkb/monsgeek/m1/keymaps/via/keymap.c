@@ -134,40 +134,6 @@ void keyboard_post_init_user(void) {
 }
 #endif
 
-#ifdef RGB_MATRIX_ENABLE
-bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
-    if (!rgb_matrix_indicators_advanced_user(led_min, led_max)) {
-        return false;
-    }
-    if(pwron_flag == false){
-        map_current_time     = timer_read();
-        if(map_current_time<3000){
-            map_current_time++;
-            for (uint8_t i = led_min; i < led_max; i++) {
-                rgb_matrix_set_color(i, 150, 150, 150);
-            }
-        }
-        if(map_current_time >= 3000)
-            pwron_flag = true;
-    }
-
-    else{
-        // caps lock cyan
-        if (host_keyboard_led_state().caps_lock) {
-            RGB_MATRIX_INDICATOR_SET_COLOR(44, 255, 255, 255);
-        }
-
-        if(keymap_config.no_gui)
-        {
-            RGB_MATRIX_INDICATOR_SET_COLOR(75, 255, 255, 255);
-        }
-
-    }
-
-    return true;
-}
-#endif
-
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
     [WIN_B] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },
