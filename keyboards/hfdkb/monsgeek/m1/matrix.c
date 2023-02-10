@@ -44,7 +44,9 @@ void led_test(uint8_t color);
 void clear_eeprom(void);
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
-
+    if (!process_record_user(keycode, record)) {
+        return false;
+    }
 dprintf("keycode = 0x%X,TG(WIN_B) = 0x%X,TG(MAC_B) = 0x%X\r\n",keycode,TG(WIN_B),TG(MAC_B));
 //    uint8_t s = rgblight_get_sat();
  //   uint8_t v = rgblight_get_val();
