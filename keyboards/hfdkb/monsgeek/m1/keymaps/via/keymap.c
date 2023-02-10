@@ -16,8 +16,8 @@
 
 #include QMK_KEYBOARD_H
 
-static uint16_t map_current_time        = 0;
-static bool     pwron_flag          = false;
+static uint16_t map_current_time = 0;
+static bool     pwron_flag       = false;
 
 enum __layers {
     WIN_B,
@@ -128,9 +128,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 void keyboard_post_init_user(void) {
     // Customise these values to desired behaviour
     debug_enable=true;
-//  debug_matrix=true;
-//debug_keyboard=true;
-//debug_mouse=true;
+    // debug_matrix=true;
+    // debug_keyboard=true;
+    // debug_mouse=true;
 }
 #endif
 
