@@ -16,8 +16,6 @@
 
 #include QMK_KEYBOARD_H
 
-
-
 enum __layers {
     WIN_B,
     WIN_WASD,
