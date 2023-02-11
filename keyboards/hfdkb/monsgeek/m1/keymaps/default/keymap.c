@@ -17,7 +17,7 @@
 #include QMK_KEYBOARD_H
 
 static uint16_t map_current_time = 0;
-static bool     pwron_flag       = false;
+
 
 enum __layers {
     WIN_B,

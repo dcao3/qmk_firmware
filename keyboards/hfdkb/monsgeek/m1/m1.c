@@ -16,6 +16,9 @@
 
 #include "m1.h"
 
+static bool pwron_flag = false;
+static uint16_t map_current_time = 0;
+
 #ifdef RGB_MATRIX_ENABLE
 const is31_led PROGMEM g_is31_leds[RGB_MATRIX_LED_COUNT] = {
 /* Refer to IS31 manual for these locations
