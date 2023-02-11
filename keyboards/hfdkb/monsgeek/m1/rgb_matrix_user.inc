@@ -1,5 +1,3 @@
-// !!! DO NOT ADD #pragma once !!! //
-
 // Step 1.
 // Declare custom effects using the RGB_MATRIX_EFFECT macro
 // (note the lack of semicolon after the macro!)
