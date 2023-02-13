@@ -54,10 +54,7 @@ dprintf("keycode = 0x%X,TG(WIN_B) = 0x%X,TG(MAC_B) = 0x%X\r\n",keycode,TG(WIN_B)
     switch (keycode) {
         case MO(WIN_FN):
         case MO(MAC_FN):
-            fn_make_flag = false;
-            if (record->event.pressed) {
-                fn_make_flag = true;
-            } 
+            fn_make_flag = record->event.pressed;
             return true;
         case KC_GRV:
             if (fn_make_flag && record->event.pressed) {
