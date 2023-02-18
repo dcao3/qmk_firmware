@@ -106,16 +106,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;  // Skip all further processing of this key
 #ifdef VIA_ENABLE
-            case KC_RESET: {
+            case KC_RESET:
             if (record->event.pressed) {
-
-            #include "via.h"
-            via_eeprom_set_valid(false);
-            eeconfig_init_via();
-
+                via_eeprom_set_valid(false);
+                eeconfig_init_via();
             }
             return false;
-        }
 #endif
     }
     return true;
