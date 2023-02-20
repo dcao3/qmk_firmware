@@ -16,36 +16,9 @@
 
 #include "m1.h"
 
-static bool pwron_flag = false;
+static bool     pwron_flag       = false;
 static uint16_t map_current_time = 0;
-
-enum __layers {
-    WIN_B,
-    WIN_WASD,
-    WIN_FN,
-    MAC_B,
-    MAC_WASD,
-    MAC_FN
-};
-
-enum colors { WHITE, RED, GREEN, BLUE };
-enum colors led_color_status = WHITE;
-
-static bool     fn_make_flag        = false;
-static bool     Lkey_flag           = false;
-static bool     reset_glint_flag    = false;
-static bool     while_test_flag     = false;
-static bool     alarm_flag          = false;
-static uint16_t current_time        = 0;
-static uint8_t  glint_cnt           = 0;
-static uint16_t scancode            = 0;
-static uint8_t  alarm_cnt           = 0;
-
-HSV hsv;
-
-void led_test(uint8_t color);
-void clear_eeprom(void);
-
+// clang-format off
 #ifdef RGB_MATRIX_ENABLE
 const is31_led PROGMEM g_is31_leds[RGB_MATRIX_LED_COUNT] = {
 /* Refer to IS31 manual for these locations
@@ -307,14 +280,73 @@ led_config_t g_led_config = {
     }
 };
 
+// clang-format on
+bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
+    if (!rgb_matrix_indicators_advanced_user(led_min, led_max)) {
+        return false;
+    }
+    if (pwron_flag == false) {
+        map_current_time = timer_read();
+        if (map_current_time < 3000) {
+            map_current_time++;
+            rgb_matrix_set_color_all(150, 150, 150);
+        }
+        if (map_current_time >= 3000) {
+            pwron_flag = true;            
+            if (!rgb_matrix_get_flags()) {
+                rgb_matrix_set_flags(LED_FLAG_NONE);
+                rgb_matrix_set_color_all(0, 0, 0);
+            }else{
+                rgb_matrix_set_flags(LED_FLAG_ALL);
+            }
+        }
+    }else {
+        if (host_keyboard_led_state().caps_lock) {
+            RGB_MATRIX_INDICATOR_SET_COLOR(44, 255, 255, 255);
+        } else {
+            if (!rgb_matrix_get_flags()) {
+                RGB_MATRIX_INDICATOR_SET_COLOR(44, 0, 0, 0);
+            }
+        }
+        if (keymap_config.no_gui) {
+            RGB_MATRIX_INDICATOR_SET_COLOR(75, 255, 255, 255);
+        } else {
+            if (!rgb_matrix_get_flags()) {
+                RGB_MATRIX_INDICATOR_SET_COLOR(75, 0, 0, 0);
+            }
+        }
+    }
+    return true;
+}
 
+#endif
+
+enum __layers { WIN_B, WIN_WASD, WIN_FN, MAC_B, MAC_WASD, MAC_FN };
+
+enum colors { WHITE, RED, GREEN, BLUE };
+enum colors led_color_status = WHITE;
+
+static bool     fn_make_flag     = false;
+static bool     Lkey_flag        = false;
+static bool     reset_glint_flag = false;
+static bool     while_test_flag  = false;
+static bool     alarm_flag       = false;
+static uint16_t current_time     = 0;
+static uint8_t  glint_cnt        = 0;
+static uint16_t scancode         = 0;
+static uint8_t  alarm_cnt        = 0;
+static uint8_t  RGB_HSV_level;
+
+HSV hsv;
+
+void led_test(uint8_t color);
+void clear_eeprom(void);
+void rgb_hsv_updata_user(void);
 
 bool process_record_kb(uint16_t keycode, keyrecord_t *record) {
     if (!process_record_user(keycode, record)) {
         return false;
     }
-dprintf("keycode = 0x%X,TG(WIN_B) = 0x%X,TG(MAC_B) = 0x%X\r\n",keycode,TG(WIN_B),TG(MAC_B));
-
     switch (keycode) {
         case MO(WIN_FN):
         case MO(MAC_FN):
@@ -322,182 +354,240 @@ dprintf("keycode = 0x%X,TG(WIN_B) = 0x%X,TG(MAC_B) = 0x%X\r\n",keycode,TG(WIN_B)
             return true;
         case KC_GRV:
             if (fn_make_flag && record->event.pressed) {
-                    Lkey_flag           = true;
-                    current_time     = timer_read();
-                    scancode = KC_GRV;
-                    return false;
+                Lkey_flag    = true;
+                current_time = timer_read();
+                scancode     = KC_GRV;
+                return false;
             } else {
                 Lkey_flag = 0;
             }
             return true;
         case KC_LCTL:
             if (fn_make_flag && record->event.pressed) {
-
-                if(while_test_flag)
-                {
+                if (while_test_flag) {
                     while_test_flag = false;
                     rgb_matrix_init();
+                } else {
+                    Lkey_flag    = true;
+                    current_time = timer_read();
+                    scancode     = KC_LCTL;
                 }
-                else
-                {
-                    Lkey_flag           = true;
-                    current_time     = timer_read();
-                    scancode = KC_LCTL;
-                }
-                return false;   
+                return false;
             } else {
                 Lkey_flag = 0;
             }
             return true;
         case DF(WIN_B):
-          if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
                 alarm_flag = true;
                 rgb_matrix_toggle_noeeprom();
-                current_time     = timer_read();
+                current_time = timer_read();
                 set_single_persistent_default_layer(WIN_B);
-                return false;  
+                return false;
             }
             return true;
         case DF(MAC_B):
-          if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
                 alarm_flag = true;
                 rgb_matrix_toggle_noeeprom();
-                current_time     = timer_read();
+                current_time = timer_read();
                 set_single_persistent_default_layer(MAC_B);
-                return false;  
+                keymap_config.no_gui     = 0;
+                eeconfig_update_keymap(keymap_config.raw);
+                return false;
             }
             return true;
         case TG(WIN_WASD):
-          if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
                 alarm_flag = true;
                 rgb_matrix_toggle_noeeprom();
-                current_time     = timer_read();
- //               set_single_persistent_default_layer(WIN_WASD);
-                return false;  
+                current_time = timer_read();
+                //               set_single_persistent_default_layer(WIN_WASD);
+                return false;
             }
             return true;
         case TG(MAC_WASD):
-          if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
                 alarm_flag = true;
                 rgb_matrix_toggle_noeeprom();
-                current_time     = timer_read();
-//                set_single_persistent_default_layer(MAC_WASD);
-                return false;  
+                current_time = timer_read();
+                //                set_single_persistent_default_layer(MAC_WASD);
+                return false;
             }
             return true;
         case MAGIC_TOGGLE_GUI:
-            if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
                 alarm_flag = true;
                 rgb_matrix_toggle_noeeprom();
-                current_time     = timer_read();
+                current_time = timer_read();
             }
             return true;
         case RGB_VAI:
-                if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
-                    if(rgblight_get_val()<180){
-                         alarm_cnt = 2;
-                    }
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_val() / (RGB_MATRIX_MAXIMUM_BRIGHTNESS / 4)) < 4) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level++;
+                    rgb_matrix_config.hsv.v = (uint8_t)(RGB_MATRIX_MAXIMUM_BRIGHTNESS / 4) * RGB_HSV_level;
                 }
-            return true;
+                rgb_hsv_updata_user();
+            }
+            return false;
         case RGB_VAD:
-                if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
-                    if(rgblight_get_val()>10){
-                        alarm_cnt = 2;
-                    }
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_val() / (RGB_MATRIX_MAXIMUM_BRIGHTNESS / 4)) > 0) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level--;
+                    rgb_matrix_config.hsv.v = (uint8_t)(RGB_MATRIX_MAXIMUM_BRIGHTNESS / 4) * RGB_HSV_level;
                 }
-            return true;
+                rgb_hsv_updata_user();
+            }
+            return false;
         case RGB_SAI:
-                if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
-                    if(rgblight_get_sat()<240){
-                         alarm_cnt = 2;
-                    }
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_sat() / (UINT8_MAX / 4)) < 4) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level++;
+                    rgb_matrix_config.hsv.s = (uint8_t)(UINT8_MAX / 4) * RGB_HSV_level;
                 }
-            return true;
+                rgb_hsv_updata_user();
+            }
+            return false;
         case RGB_SAD:
-                if ((fn_make_flag && record->event.pressed)&&(alarm_flag == 0)) {
-                    if(rgblight_get_sat()>10){
-                        alarm_cnt = 2;
-                    }
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_sat() / (UINT8_MAX / 4)) > 0) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level--;
+                    rgb_matrix_config.hsv.s = (uint8_t)(UINT8_MAX / 4) * RGB_HSV_level;
                 }
-            return true;
+                rgb_hsv_updata_user();
+            }
+            return false;
+        case RGB_HUI:
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_hue() / (UINT8_MAX / 6)) < 6) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level++;
+                    rgb_matrix_config.hsv.h = (uint8_t)(UINT8_MAX / 6) * RGB_HSV_level;
+                }
+                rgb_hsv_updata_user();
+            }
+            return false;
+        case RGB_HUD:
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_hue() / (UINT8_MAX / 6)) > 0) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level--;
+                    rgb_matrix_config.hsv.h = (uint8_t)(UINT8_MAX / 6) * RGB_HSV_level;
+                }
+                rgb_hsv_updata_user();
+            }
+            return false;
+        case RGB_SPI:
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_speed() / (UINT8_MAX / 4)) < 4) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level++;
+                    rgb_matrix_set_speed((uint8_t)(UINT8_MAX / 4) * RGB_HSV_level);
+                }
+            }
+            return false;
+        case RGB_SPD:
+            if ((fn_make_flag && record->event.pressed) && (alarm_flag == 0)) {
+                if ((RGB_HSV_level = (uint8_t)rgb_matrix_get_speed() / (UINT8_MAX / 4)) > 0) {
+                    alarm_cnt = 2;
+                    RGB_HSV_level--;
+                    rgb_matrix_set_speed((uint8_t)(UINT8_MAX / 4) * RGB_HSV_level);
+                }
+            }
+            return false;
+        case RGB_TOG:
+            if (record->event.pressed) {
+                switch (rgb_matrix_get_flags()) {
+                    case LED_FLAG_ALL: {
+                        rgb_matrix_set_flags(LED_FLAG_NONE);
+                        rgb_matrix_set_color_all(0, 0, 0);
+                    } break;
+                    default: {
+                        rgb_matrix_set_flags(LED_FLAG_ALL);
+                    } break;
+                }
+            }
+            if (!rgb_matrix_is_enabled()) {
+                rgb_matrix_set_flags(LED_FLAG_ALL);
+                rgb_matrix_enable();
+            }
+            return false;
         default:
             return process_record_user(keycode, record);
     }
 }
 
 void housekeeping_task_kb(void) {
-    if(Lkey_flag){
-        if(scancode == KC_GRV){
+    if (Lkey_flag) {
+        if (scancode == KC_GRV) {
             if (timer_elapsed(current_time) >= 3000) {
                 Lkey_flag = false;
                 clear_eeprom();
 
-                current_time  = timer_read();
+                current_time     = timer_read();
                 reset_glint_flag = true;
-                glint_cnt = 0;
+                glint_cnt        = 0;
                 rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
                 rgb_matrix_sethsv_noeeprom(HSV_OFF);
             }
-        }
-        else if(scancode == KC_LCTL){
+        } else if (scancode == KC_LCTL) {
             if (timer_elapsed(current_time) >= 3000) {
                 Lkey_flag = false;
                 clear_eeprom();
 
                 while_test_flag = true;
-                glint_cnt = 0;
+                glint_cnt       = 0;
                 rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
                 rgb_matrix_sethsv_noeeprom(HSV_WHITE);
             }
         }
-    }
-    else if(reset_glint_flag){
+    } else if (reset_glint_flag) {
         if ((timer_elapsed(current_time)) >= 300) {
             current_time = timer_read();
-            if (((glint_cnt++) & 0x01 )== 0) {
+            if (((glint_cnt++) & 0x01) == 0) {
                 rgb_matrix_sethsv_noeeprom(HSV_WHITE);
             } else {
                 rgb_matrix_sethsv_noeeprom(HSV_OFF);
             }
             if (glint_cnt >= 3) {
-                glint_cnt          = 0;
+                glint_cnt        = 0;
                 reset_glint_flag = false;
                 rgb_matrix_init();
             }
         }
 
-    }
-    else if(while_test_flag){
+    } else if (while_test_flag) {
         if ((timer_elapsed(current_time)) >= 1000) {
             current_time = timer_read();
-            if ((glint_cnt%4) == 0) {
+            if ((glint_cnt % 4) == 0) {
                 rgb_matrix_sethsv_noeeprom(HSV_RED);
-            } else if ((glint_cnt%4)== 1) {
+            } else if ((glint_cnt % 4) == 1) {
                 rgb_matrix_sethsv_noeeprom(HSV_GREEN);
-            } else if ((glint_cnt%4)== 2) {
+            } else if ((glint_cnt % 4) == 2) {
                 rgb_matrix_sethsv_noeeprom(HSV_BLUE);
-            } else if ((glint_cnt%4)== 3) {
+            } else if ((glint_cnt % 4) == 3) {
                 rgb_matrix_sethsv_noeeprom(HSV_WHITE);
             }
             glint_cnt++;
-            if(glint_cnt>=30)
-            {
-                glint_cnt = 0;
+            if (glint_cnt >= 30) {
+                glint_cnt       = 0;
                 while_test_flag = false;
                 rgb_matrix_init();
             }
         }
-    }
-    else if(alarm_cnt != 0)
-    {
+    } else if (alarm_cnt != 0) {
         alarm_cnt--;
-        if(alarm_cnt == 0){
+        if (alarm_cnt == 0) {
             alarm_flag = true;
             rgb_matrix_toggle_noeeprom();
-            current_time     = timer_read();
+            current_time = timer_read();
         }
-    }
-    else if(alarm_flag){
+    } else if (alarm_flag) {
         if ((timer_elapsed(current_time)) >= 200) {
             rgb_matrix_toggle_noeeprom();
             alarm_flag = 0;
@@ -505,10 +595,9 @@ void housekeeping_task_kb(void) {
     }
 }
 
-
 void led_test(uint8_t color) {
     rgb_matrix_mode_noeeprom(RGB_MATRIX_SOLID_COLOR);
- 
+
     switch (color) {
         case WHITE:
             rgb_matrix_sethsv_noeeprom(HSV_WHITE);
@@ -533,50 +622,18 @@ void clear_eeprom(void) {
     eeconfig_init();
     default_layer_set(default_layer_temp);
 
-    #ifdef VIA_ENABLE
-        // This resets the layout options
-        via_set_layout_options(VIA_EEPROM_LAYOUT_OPTIONS_DEFAULT);
-        // This resets the keymaps in EEPROM to what is in flash.
-        dynamic_keymap_reset();
-        // This resets the macros in EEPROM to nothing.
-        dynamic_keymap_macro_reset();
-    #endif
+#ifdef VIA_ENABLE
+    // This resets the layout options
+    via_set_layout_options(VIA_EEPROM_LAYOUT_OPTIONS_DEFAULT);
+    // This resets the keymaps in EEPROM to what is in flash.
+    dynamic_keymap_reset();
+    // This resets the macros in EEPROM to nothing.
+    dynamic_keymap_macro_reset();
+#endif
 
     rgb_matrix_enable_noeeprom();
 }
 
-bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
-    if (!rgb_matrix_indicators_advanced_user(led_min, led_max)) {
-        return false;
-    }
-    if(pwron_flag == false){
-        map_current_time     = timer_read();
-        if(map_current_time<3000){
-            map_current_time++;
-            for (uint8_t i = led_min; i < led_max; i++) {
-                rgb_matrix_set_color(i, 150, 150, 150);
-            }
-        }
-        if(map_current_time >= 3000)
-            pwron_flag = true;
-    }
-
-    else{
-        // caps lock cyan
-        if (host_keyboard_led_state().caps_lock) {
-            RGB_MATRIX_INDICATOR_SET_COLOR(44, 255, 255, 255);
-        }
-
-        if(keymap_config.no_gui)
-        {
-            RGB_MATRIX_INDICATOR_SET_COLOR(75, 255, 255, 255);
-        }
-
-    }
-
-    return true;
+void rgb_hsv_updata_user(void) {
+    rgb_matrix_sethsv(rgb_matrix_config.hsv.h, rgb_matrix_config.hsv.s, rgb_matrix_config.hsv.v);
 }
-#endif
-
-
-

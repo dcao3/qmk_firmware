@@ -27,6 +27,7 @@ enum __layers {
 enum custom_keycodes {
     KC_MISSION_CONTROL = QK_USER,
     KC_LAUNCHPAD,
+    KC_RESET
 };
 
 #define KC_TASK LGUI(KC_TAB)
@@ -107,4 +108,16 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
     return true;
 }
+
+
+#if defined(ENCODER_MAP_ENABLE)
+const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
+    [WIN_B] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },
+    [WIN_WASD] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },
+    [WIN_FN] = { ENCODER_CCW_CW(RGB_VAI, RGB_VAD) },
+    [MAC_B] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },
+    [MAC_WASD] = { ENCODER_CCW_CW(KC_VOLU, KC_VOLD) },
+    [MAC_FN] = { ENCODER_CCW_CW(RGB_VAI, RGB_VAD) }
+};
+#endif
 
