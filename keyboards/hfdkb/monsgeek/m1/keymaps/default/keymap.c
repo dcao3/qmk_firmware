@@ -27,7 +27,6 @@ enum __layers {
 enum custom_keycodes {
     KC_MISSION_CONTROL = QK_USER,
     KC_LAUNCHPAD,
-    KC_RESET
 };
 
 #define KC_TASK LGUI(KC_TAB)
